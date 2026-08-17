@@ -115,6 +115,7 @@ func TestCastTimestampToStringCanonicalForm(t *testing.T) {
 			t.Errorf("CastValue(STRING, TIMESTAMP %v): got %#v, want %q", tc.in, got, tc.want)
 		}
 	}
+}
 
 func TestCastStringToNumberRejectsBlankAndTrims(t *testing.T) {
 	i64 := m1(tf().MakeSimpleType(googlesql.TypeKindTypeInt64))
