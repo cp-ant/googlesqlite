@@ -98,8 +98,6 @@ func (fv FloatValue) ToBytes() ([]byte, error) {
 	return []byte(formatFloat(float64(fv))), nil
 }
 
-// formatFloat is the shortest of %.15g / %.17g that round-trips, with
-// nan, inf and -inf spelled in lower case.
 func formatFloat(f float64) string {
 	switch {
 	case math.IsNaN(f):
@@ -139,7 +137,16 @@ func (fv FloatValue) ToStruct() (*StructValue, error) {
 }
 
 func (fv FloatValue) ToJSON() (string, error) {
-	return fmt.Sprint(fv), nil
+	switch f := float64(fv); {
+	case math.IsNaN(f):
+		return `"NaN"`, nil
+	case math.IsInf(f, 1):
+		return `"Infinity"`, nil
+	case math.IsInf(f, -1):
+		return `"-Infinity"`, nil
+	default:
+		return formatFloat(f), nil
+	}
 }
 
 func (fv FloatValue) ToTime() (time.Time, error) {
