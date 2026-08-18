@@ -385,6 +385,10 @@ func TestJsonStringInputMalformedOrNonMatchingIsNull(t *testing.T) {
 		}
 		if _, err := fn(value.StringValue(`{"a":1}`), value.StringValue(`$[`)); err == nil {
 			t.Errorf("%s with an invalid JSONPath must fail", name)
+		}
+	}
+}
+
 func TestJsonValueArrayNullElement(t *testing.T) {
 	t.Parallel()
 
