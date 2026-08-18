@@ -11,8 +11,51 @@ cases:
     expected:
       rows:
         - [3.3333333333333335, 1]
-  - desc: unary minus
+  - desc: unary minus on an integer literal
     sql: SELECT -5 AS r
     expected:
       rows:
         - [-5]
+  # GoogleSQL compliance source: GetFunctionTestsUnaryMinus in
+  # googlesql/compliance/functions_testlib_math.cc.
+  - desc: unary minus on numeric columns preserves values and types
+    setup:
+      - CREATE TABLE unary_values (i INT64, n NUMERIC, bn BIGNUMERIC, f FLOAT64)
+      - |
+        INSERT INTO unary_values VALUES (
+          7,
+          NUMERIC "123.456789123",
+          BIGNUMERIC "3.14159265358979323846264338327950288420",
+          1.25
+        )
+    sql: SELECT -i, -n, -bn, -f FROM unary_values
+    expected:
+      rows:
+        - [-7, "-123.456789123", "-3.1415926535897932384626433832795028842", -1.25]
+  - desc: unary minus on null columns returns null
+    setup:
+      - CREATE TABLE unary_nulls (i INT64, n NUMERIC, bn BIGNUMERIC, f FLOAT64)
+      - INSERT INTO unary_nulls VALUES (NULL, NULL, NULL, NULL)
+    sql: SELECT -i, -n, -bn, -f FROM unary_nulls
+    expected:
+      rows:
+        - [null, null, null, null]
+  - desc: unary minus reports INT64 overflow
+    setup:
+      - CREATE TABLE unary_int64_min (v INT64)
+      - INSERT INTO unary_int64_min VALUES (CAST("-9223372036854775808" AS INT64))
+    sql: SELECT -v FROM unary_int64_min
+    expected:
+      error:
+        contains: "int64 overflow: --9223372036854775808"
+  - desc: unary minus reports BIGNUMERIC overflow
+    setup:
+      - CREATE TABLE unary_bignumeric_min (v BIGNUMERIC)
+      - |
+        INSERT INTO unary_bignumeric_min VALUES (
+          BIGNUMERIC "-578960446186580977117854925043439539266.34992332820282019728792003956564819968"
+        )
+    sql: SELECT -v FROM unary_bignumeric_min
+    expected:
+      error:
+        contains: "BIGNUMERIC overflow"
