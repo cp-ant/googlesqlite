@@ -385,6 +385,17 @@ func TestJsonStringInputMalformedOrNonMatchingIsNull(t *testing.T) {
 		}
 		if _, err := fn(value.StringValue(`{"a":1}`), value.StringValue(`$[`)); err == nil {
 			t.Errorf("%s with an invalid JSONPath must fail", name)
+func TestJsonValueArrayNullElement(t *testing.T) {
+	t.Parallel()
+
+	for name, fn := range map[string]func(...value.Value) (value.Value, error){"JSON_VALUE_ARRAY": BindJsonValueArray, "JSON_EXTRACT_STRING_ARRAY": BindJsonExtractStringArray} {
+		got, err := fn(value.StringValue(`["a", null, "null"]`), value.StringValue("$"))
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		arr := mustArray(t, got)
+		if len(arr.Values) != 3 || arr.Values[1] != nil || arr.Values[2] != value.Value(value.StringValue("null")) {
+			t.Errorf("%s = %#v", name, arr.Values)
 		}
 	}
 }
