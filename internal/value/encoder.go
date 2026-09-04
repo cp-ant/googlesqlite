@@ -161,6 +161,11 @@ func valueLayoutFromValue(v Value) (*ValueLayout, error) {
 	switch vv := v.(type) {
 	case FloatValue:
 		return &ValueLayout{Header: FloatValueType, Body: strconv.FormatFloat(float64(vv), 'g', -1, 64)}, nil
+	case BoolValue:
+		return &ValueLayout{
+			Header: BoolValueType,
+			Body:   strconv.FormatBool(bool(vv)),
+		}, nil
 	case StringValue:
 		return &ValueLayout{
 			Header: StringValueType,
@@ -323,4 +328,22 @@ func valueLayoutFromValue(v Value) (*ValueLayout, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("unexpected value type for layout: %T", v)
+}
+
+var encodedBoolLayouts = [2]string{encodeBoolLayout(false), encodeBoolLayout(true)}
+
+func encodeBoolLayout(b bool) string {
+	out, err := json.Marshal(&ValueLayout{Header: BoolValueType, Body: strconv.FormatBool(b)})
+	if err != nil {
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString(out)
+}
+
+// EncodedBoolLayout is the form of a BOOL that keeps its type as a function argument.
+func EncodedBoolLayout(b bool) string {
+	if b {
+		return encodedBoolLayouts[1]
+	}
+	return encodedBoolLayouts[0]
 }
