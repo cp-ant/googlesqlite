@@ -207,6 +207,27 @@ func TestDiv(t *testing.T) {
 	}
 }
 
+func TestSafeDivideNumeric(t *testing.T) {
+	t.Parallel()
+	x := &value.NumericValue{Rat: ratOf("79228162514264337593543950336"), IsBigNumeric: true}
+	y := &value.NumericValue{Rat: ratOf("58"), IsBigNumeric: true}
+	got, err := SAFE_DIVIDE(x, y)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nv, ok := got.(*value.NumericValue)
+	want := ratOf("79228162514264337593543950336/58")
+	if !ok || !nv.IsBigNumeric || nv.Cmp(want) != 0 {
+		t.Errorf("SAFE_DIVIDE(BIGNUMERIC) = %#v, want exact %s", got, want.RatString())
+	}
+	if got, err := SAFE_DIVIDE(&value.NumericValue{Rat: ratOf("1")}, &value.NumericValue{Rat: ratOf("0")}); err != nil || got != nil {
+		t.Errorf("SAFE_DIVIDE(NUMERIC 1, NUMERIC 0) = %v, %v; want NULL", got, err)
+	}
+	if got, _ := SAFE_DIVIDE(value.IntValue(1), value.IntValue(3)); got != value.Value(value.FloatValue(1.0/3.0)) {
+		t.Errorf("SAFE_DIVIDE(1, 3) = %#v, want FLOAT64", got)
+	}
+}
+
 func ratOf(s string) *big.Rat {
 	r, _ := new(big.Rat).SetString(s)
 	return r
