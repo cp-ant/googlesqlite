@@ -2,6 +2,7 @@ package math
 
 import (
 	gomath "math"
+	"math/big"
 	"testing"
 
 	"github.com/goccy/googlesqlite/internal/value"
@@ -178,16 +179,37 @@ func TestBinaryMath(t *testing.T) {
 	}
 }
 
-// --- DIV (INT64 integer division) ---
-
 func TestDiv(t *testing.T) {
-	got, _ := DIV(value.IntValue(7), value.IntValue(2))
-	if mustInt(t, got) != 3 {
-		t.Fatalf("DIV(7,2) = %d, want 3", mustInt(t, got))
+	t.Parallel()
+	if got, _ := DIV(value.IntValue(-7), value.IntValue(2)); got != value.Value(value.IntValue(-3)) {
+		t.Errorf("DIV(-7, 2) = %#v, want IntValue(-3)", got)
+	}
+	for _, c := range []struct{ x, y, want string }{
+		{"9223372036854775808", "2", "4611686018427387904"},
+		{"79228162514264337593543950336", "58", "1366002801970074786095585350"},
+		{"-7.9", "2", "-3"},
+		{"7", "-2", "-3"},
+		{"1", "3", "0"},
+	} {
+		x := &value.NumericValue{Rat: ratOf(c.x), IsBigNumeric: true}
+		y := &value.NumericValue{Rat: ratOf(c.y), IsBigNumeric: true}
+		got, err := DIV(x, y)
+		if err != nil {
+			t.Fatalf("DIV(%s, %s): %v", c.x, c.y, err)
+		}
+		nv, ok := got.(*value.NumericValue)
+		if !ok || !nv.IsBigNumeric || nv.RatString() != c.want {
+			t.Errorf("DIV(%s, %s) = %#v, want BIGNUMERIC %s", c.x, c.y, got, c.want)
+		}
 	}
 	if _, err := DIV(value.IntValue(1), value.IntValue(0)); err == nil {
-		t.Fatalf("DIV zero divisor should error")
+		t.Error("DIV division by zero should error")
 	}
+}
+
+func ratOf(s string) *big.Rat {
+	r, _ := new(big.Rat).SetString(s)
+	return r
 }
 
 // --- IS_INF / IS_NAN / SIGN ---
